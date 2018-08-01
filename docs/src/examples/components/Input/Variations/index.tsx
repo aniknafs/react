@@ -9,6 +9,11 @@ const Variations = () => (
       description="An input can have a search icon."
       examplePath="components/Input/Variations/InputExampleIcon"
     />
+    <ComponentExample
+      title="Clearable icon"
+      description="An input can have a search icon that can change into clear button on typing."
+      examplePath="components/Input/Variations/InputExampleIconChange"
+    />
   </ExampleSection>
 )
 

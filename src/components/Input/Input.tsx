@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types'
-import React, { Children, cloneElement } from 'react'
+import React, { Children, cloneElement, ReactNode } from 'react'
 import cx from 'classnames'
 import _ from 'lodash'
 
@@ -43,20 +43,58 @@ class Input extends UIComponent<any, any> {
     /** Shorthand for creating the HTML Input. */
     input: customPropTypes.itemShorthand,
 
+    /**
+     * Called on change.
+     *
+     * @param {SyntheticEvent} event - React's original SyntheticEvent.
+     * @param {object} data - All props and proposed value.
+     */
+    onChange: PropTypes.func,
+
+    /**
+     * Function called when the icon is clicked.
+     *
+     * @param {SyntheticEvent} event - React's original SyntheticEvent.
+     * @param {object} data - All props.
+     */
+    onIconClick: PropTypes.func,
+
     /** The HTML input type. */
     type: PropTypes.string,
   }
 
-  static handledProps = ['as', 'children', 'className', 'icon', 'input', 'type']
+  static handledProps = [
+    'as',
+    'children',
+    'className',
+    'icon',
+    'input',
+    'onChange',
+    'onIconClick',
+    'type',
+  ]
 
   static defaultProps = {
     as: 'div',
     type: 'text',
   }
 
+  handleChange = e => {
+    const value = _.get(e, 'target.value')
+
+    _.invoke(this.props, 'onChange', e, { ...this.props, value })
+  }
+
   handleChildOverrides = (child, defaultProps) => ({
     ...defaultProps,
     ...child.props,
+  })
+
+  handleIconOverrides = predefinedProps => ({
+    onClick: e => {
+      _.invoke(predefinedProps, 'onClick', e)
+      _.invoke(this.props, 'onIconClick', e, this.props)
+    },
   })
 
   partitionProps = () => {
@@ -68,24 +106,32 @@ class Input extends UIComponent<any, any> {
     return [
       {
         ...htmlInputProps,
+        onChange: this.handleChange,
         type,
       },
       rest,
     ]
   }
 
-  computeIcon = () => {
-    const { icon } = this.props
-
-    if (!_.isNil(icon)) return icon
-    return null
-  }
-
   renderComponent({ ElementType, classes, rest }) {
-    const { children, className, icon, input, type } = this.props
+    const { children, className, icon, input, type, onIconClick } = this.props
     const [htmlInputProps, restProps] = this.partitionProps()
 
     const inputClasses = cx(classes.input)
+
+    const iconProps = {
+      className: classes.icon,
+      ...(icon &&
+        typeof icon === 'string' && {
+          name: icon,
+          ...(onIconClick && { tabIndex: '0' }),
+        }),
+      ...(icon &&
+        typeof icon === 'object' && {
+          ...icon,
+          ...(icon.onClick && { tabIndex: '0' }),
+        }),
+    }
 
     // Render with children
     // ----------------------------------------
@@ -103,14 +149,22 @@ class Input extends UIComponent<any, any> {
       )
     }
 
-    if (this.computeIcon()) {
+    if (!_.isNil(icon)) {
       return (
         <ElementType {...rest} className={classes.root} {...htmlInputProps}>
           {createHTMLInput(input || type, {
             defaultProps: htmlInputProps,
             overrideProps: { className: inputClasses },
           })}
-          <Icon name={this.computeIcon()} />
+          {Icon.create(
+            {
+              ...iconProps,
+            },
+            {
+              generateKey: false,
+              overrideProps: this.handleIconOverrides,
+            },
+          )}
         </ElementType>
       )
     }

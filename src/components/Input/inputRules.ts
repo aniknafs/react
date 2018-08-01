@@ -18,6 +18,12 @@ const inputRules = {
       border: 0,
     }
   },
+
+  icon: ({ props, variables }) => {
+    return {
+      outline: 0,
+    }
+  },
 }
 
 export default inputRules
